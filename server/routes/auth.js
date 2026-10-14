@@ -11,6 +11,7 @@ const publicUser = (u) => ({ id: u.id, name: u.name, username: u.username, role:
 
 r.post('/auth/login', (req, res) => {
   const { username = '', password = '' } = req.body;
+  if (typeof username !== 'string' || typeof password !== 'string') return res.status(400).json({ error: 'invalid_signup'});
   const u = one('SELECT * FROM users WHERE username = ?', username.trim().toLowerCase());
   if (!u || !bcrypt.compareSync(password, u.password_hash)) return res.status(401).json({ error: 'wrong_login' });
   res.json({ token: signToken(u), user: publicUser(u) });
@@ -18,6 +19,7 @@ r.post('/auth/login', (req, res) => {
 
 r.post('/auth/register', (req, res) => {
   const { name = '', username = '', password = '', lang = 'en', ui_mode = 'full', consent = false } = req.body;
+  if (typeof username !== 'string' || typeof password !== 'string') return res.status(400).json({ error: 'invalid_signup'});
   const uname = username.trim().toLowerCase();
   if (!consent) return res.status(400).json({ error: 'need_consent' });
   if (!name.trim() || !/^[a-z0-9_]{3,20}$/.test(uname) || password.length < 6) {
