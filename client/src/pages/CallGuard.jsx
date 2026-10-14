@@ -35,6 +35,7 @@ function MarkedLine({ text }) {
 }
 
 export default function CallGuard() {
+  const [aiResult, setAiResult] = useState(null);
   const { t, lang } = useI18n();
   const { socket } = useApp();
   const nav = useNavigate();
@@ -50,7 +51,12 @@ export default function CallGuard() {
 
   const full = [...lines, interim].join(' ');
   const result = analyse(full);
-  const level = levelOf(result.score);
+  
+  // Combine rule engine results with AI results
+  const effectiveScore = aiResult?.score ?? result.score;
+  const effectiveSummary = aiResult?.summary;
+  const level = levelOf(effectiveScore); 
+
 
   // Family alert rules come from Notification settings: auto (5s countdown) | ask | off
   const [callMode, setCallMode] = useState('auto');
@@ -67,6 +73,20 @@ export default function CallGuard() {
     socket?.emit('call:risk', { score: result.score, level, shared: true });
     api.post('/kaki', { content: lines.slice(-3).join(' '), kind: 'call' }).catch(() => {});
   };
+
+  // Automatically send transcript to Gemini AI backend when new lines arrive
+  useEffect(() => {
+    if (!full.trim()) {
+      setAiResult(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      api.post('/check', { text: full, lang })
+        .then((data) => setAiResult(data))
+        .catch(() => setAiResult(null));
+    }, 400); // 400ms debounce so it doesn't spam the API on every single character
+    return () => clearTimeout(timer);
+  }, [full, lang]);
 
   // Phone buzzes when the level rises
   useEffect(() => {
@@ -141,14 +161,28 @@ export default function CallGuard() {
     <main className="page callguard">
       <PageHead title={t('call.title')} sub={t('call.intro')} back />
 
-      <div className={`call-meter cm-${level} ${mode ? 'live' : ''}`}>
+      {/* <div className={`call-meter cm-${level} ${mode ? 'live' : ''}`}>
         <div className="cm-ring"><span>{result.score}</span></div>
         <strong>{mode || lines.length ? t(statusKey) : t('call.title')}</strong>
         <div className="cm-bar"><i style={{ width: `${result.score}%` }} /></div>
         {result.flags.length > 0 && (
           <div className="chips">{result.flags.slice(0, 5).map((f) => <span key={f.flag} className="chip warn">{t(`flag.${f.flag}.t`)}</span>)}</div>
         )}
+      </div> */}
+
+      <div className={`call-meter cm-${level} ${mode ? 'live' : ''}`}>
+        <div className="cm-ring"><span>{effectiveScore}</span></div>
+        <strong>{mode || lines.length ? (effectiveSummary || t(statusKey)) : t('call.title')}</strong>
+        <div className="cm-bar"><i style={{ width: `${effectiveScore}%` }} /></div>
+        {result.flags.length > 0 && (
+          <div className="chips">
+            {result.flags.slice(0, 5).map((f) => (
+              <span key={f.flag} className="chip warn">{t(`flag.${f.flag}.t`)}</span>
+            ))}
+          </div>
+        )}
       </div>
+      
 
       <div className="call-controls">
         {mode ? (
