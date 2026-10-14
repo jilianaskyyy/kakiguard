@@ -28,6 +28,9 @@ import safetyRoutes from './routes/safety.js';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
+import { analyse } from '@shared/scamEngine.js';
+import { explainWithAI } from '../ai.js';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3001;
 
@@ -35,6 +38,33 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 app.set('io', io);
+
+const router = express.Router();
+router.post('/check', async (req, res) => {
+  const { text, lang = 'en' } = req.body;
+
+  if (!text || typeof text !== 'string') {
+    return res.status(400).json({ error: 'text_required' });
+  }
+
+  // Local rule engine fallback
+  const ruleResult = analyse(text);
+
+  // Call Gemini AI
+  const aiResult = await explainWithAI(text, ruleResult, lang);
+
+  // Return merged response (prioritizes AI score & verdict when available)
+  return res.json({
+    score: aiResult?.score ?? ruleResult.score,
+    verdict: aiResult?.verdict ?? 'probably_safe',
+    summary: aiResult?.summary || '',
+    flags: aiResult?.extra_red_flags || ruleResult.flags.map(f => f.flag) || [],
+    next_step: aiResult?.next_step || '',
+    ruleScore: ruleResult.score // optional reference
+  });
+});
+
+export default router;
 
 // Safer: security headers, a body size limit, and rate limits on the routes people could abuse
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
