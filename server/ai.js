@@ -24,7 +24,7 @@ Never say something is 100% safe. If money was already sent, tell them to call t
   try {
     // Request JSON formatted output directly from Gemini 2.0 Flash
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3.5-flash-lite',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
