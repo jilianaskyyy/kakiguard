@@ -1,5 +1,5 @@
 // Opens the SQLite database, creates tables, and seeds demo data on first run.
-import Database from 'better-sqlite3';
+import Database from 'better-sqlite3-multiple-ciphers';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,6 +9,18 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'kakiguard.db');
 
 export const db = new Database(DB_PATH);
+// Encryption at rest: with DB_KEY set, the file is scrambled (SQLCipher, AES-256).
+// Someone who copies kakiguard.db without the key sees only noise.
+if (process.env.DB_KEY) {
+  db.pragma("cipher='sqlcipher'");
+  db.pragma(`key='${process.env.DB_KEY.replace(/'/g, "''")}'`);
+}
+try { db.prepare('SELECT count(*) FROM sqlite_master').get(); } catch {
+  console.error(process.env.DB_KEY
+    ? '❌ Could not open kakiguard.db with this DB_KEY. It was made without a key or with a different one. To start fresh: npm run reset-db'
+    : '❌ kakiguard.db is encrypted. Add the same DB_KEY to server/.env (or start fresh with: npm run reset-db)');
+  process.exit(1);
+}
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 db.exec(fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8'));
