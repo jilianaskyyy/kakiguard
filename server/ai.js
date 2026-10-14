@@ -7,7 +7,6 @@ export const aiEnabled = () => Boolean(process.env.GEMINI_API_KEY);
 export async function explainWithAI(text, ruleResult, lang = 'en') {
   if (!aiEnabled()) return null;
 
-  // Initialize the Gemini client using key from process.env
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
   const prompt = `You help people in Singapore check whether a message or call might be a scam.
@@ -23,7 +22,7 @@ Never say something is 100% safe. If money was already sent, tell them to call t
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.5-flash-lite', // Updated model string
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
