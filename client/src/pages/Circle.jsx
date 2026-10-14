@@ -9,6 +9,9 @@ import { Avatar, PageHead, levelOf } from '../components/ui.jsx';
 import { VerifySheet } from '../components/Verify.jsx';
 import { prettyNumber } from '@shared/privacy.js';
 
+const cleanNumber = (v) => v.replace(/\D/g, '').slice(0, 8);
+const isValidNumber = (v) => /^\d{8}$/.test(v);
+
 function KakiItem({ k, me, onReply }) {
   const { t, timeAgo } = useI18n();
   const mine = k.sender_id === me;
@@ -51,14 +54,23 @@ function BlockList({ circleId }) {
   const [num, setNum] = useState('');
   const [label, setLabel] = useState('');
   const [err, setErr] = useState('');
+  const digits = cleanNumber(num);
+  const valid = isValidNumber(digits);
+
   useEffect(() => {
     api.get('/blocks').then(setList).catch(() => {});
     return onEvent((name) => { if (name === 'blocks:update') api.get('/blocks').then(setList).catch(() => {}); });
   }, [onEvent]);
+
   const add = async (e) => {
     e.preventDefault(); setErr('');
-    try { setList(await api.post('/blocks', { number: num, label, circle_id: circleId })); setNum(''); setLabel(''); } catch { setErr(t('blocks.bad')); }
+    if(!valid) { setErr(t('blocks.bad')); return; }
+    try {
+      setList(await api.post('/blocks', { number: digits, label, circle_id: circleId }));
+      setNum(''); setLabel('');
+    } catch { setErr(t('blocks.bad')); }
   };
+ 
   const remove = async (id) => setList(await api.del(`/blocks/${id}`).catch(() => list));
   const simple = user.ui_mode === 'simple';
 
@@ -81,10 +93,23 @@ function BlockList({ circleId }) {
         </ul>
       )}
       <form className="panel block-form" onSubmit={add}>
-        <label className="field">{t('blocks.number')}<input id="block-number" inputMode="tel" placeholder="8123 4567" value={num} onChange={(e) => setNum(e.target.value)} /></label>
-        {!simple && <label className="field">{t('blocks.label')}<input id="block-label" value={label} onChange={(e) => setLabel(e.target.value)} /></label>}
+        <label className="field">{t('blocks.number')}
+          <input
+            id="block-number"
+            type="tel"
+            inputMode="numeric"
+            maxLength={9}
+            placeHolder="81234567"
+            value={num}
+            onChange={(e) => {
+              const d = cleanNumber(e.target.value);
+              setNum(d.length > 4 ? `${d.slice(0, 4)} ${d.slice(4)}` : d);
+            }}
+          />
+        </label>
+        {!simple && <label className="field">{t('blocks.label')}<input id="block=label" value={label} onChange={(e) => setLabel(e.target.value)} /></label>}
         {err && <p className="error">{err}</p>}
-        <button type="submit" className="btn btn-primary" disabled={!num.trim()}><Ban size={18} /> {t('blocks.add')}</button>
+        <button type="submit" className="btn btn-primary" disabled={!valid}><Ban size={18} /> {t('blocks.add')}</button>
       </form>
       <p className="muted small">{t('blocks.note')}</p>
     </section>
