@@ -28,8 +28,8 @@ import safetyRoutes from './routes/safety.js';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
-import { analyse } from '@shared/scamEngine.js';
-import { explainWithAI } from '../ai.js';
+import { analyse } from '../shared/scamEngine.js';
+import { explainWithAI } from './ai.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3001;
