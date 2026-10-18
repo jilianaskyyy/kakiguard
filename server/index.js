@@ -129,5 +129,5 @@ if (fs.existsSync(dist)) {
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`🛡️  KakiGuard API running on http://localhost:${PORT}`);
-  console.log(aiEnabled() ? '🤖 AI explanations: ON (Gemini)' : '🤖 AI explanations: OFF (rule engine only — add GEMINI_API_KEY to server/.env)');
+  console.log(aiEnabled() ? 'AI explanations:' : 'AI explanations: OFF (rule engine only)');
 });
