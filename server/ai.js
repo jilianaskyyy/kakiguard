@@ -1,28 +1,26 @@
 // server/ai.js
-import { GoogleGenAI } from '@google/genai';
+import { Ollama } from 'ollama';
 
 const LANG_NAMES = { en: 'English', zh: 'Simplified Chinese', ms: 'Malay', ta: 'Tamil' };
 
-export const aiEnabled = () => Boolean(process.env.GEMINI_API_KEY);
+// Create an instance connecting to your local Ollama server
+const ollama = new Ollama({ host: process.env.OLLAMA_HOST || 'http://127.0.0.1:11434' });
+
+export const aiEnabled = () => true; // Always enabled since it's running locally
 
 export async function explainWithAI(text, ruleResult = {}, lang = 'en') {
-  if (!aiEnabled()) return null;
-
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
   const prompt = `You are KakiGuard, an expert AI scam detector protecting people in Singapore from phone scams, phishing, and fraud.
 
 Analyze the following live call transcript / message:
 """${text.slice(0, 3000)}"""
 
-Evaluate the content and provide a risk assessment.
 Reply ONLY with a valid JSON object matching this exact shape:
 {
-  "score": <integer from 0 to 100 representing scam risk level>,
-  "verdict": "likely_scam" | "suspicious" | "probably_safe",
-  "summary": "<2 simple, clear sentences explaining why this is or isn't a scam>",
-  "extra_red_flags": ["<short tag 1>", "<short tag 2>"],
-  "next_step": "<1 short actionable advice sentence>"
+  "score": 85,
+  "verdict": "likely_scam",
+  "summary": "2 short sentences explaining why this is or isn't a scam",
+  "extra_red_flags": ["short flag 1", "short flag 2"],
+  "next_step": "one short sentence advising what to do next"
 }
 
 Guidelines for scoring:
@@ -34,18 +32,16 @@ Write summary, extra_red_flags, and next_step in ${LANG_NAMES[lang] || 'English'
 Never say something is 100% safe. If money was sent or requested, advise calling their bank and ScamShield Helpline 1799.`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash-lite',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-      },
+    const response = await ollama.chat({
+      model: process.env.OLLAMA_MODEL || 'llama3.2', // or qwen2.5
+      messages: [{ role: 'user', content: prompt }],
+      format: 'json', // Ensures Ollama outputs clean JSON
     });
 
-    const rawText = response.text || '';
+    const rawText = response.message?.content || '';
     return JSON.parse(rawText);
   } catch (err) {
-    console.warn('AI evaluation failed:', err.message);
+    console.warn('Local Ollama AI evaluation failed:', err.message);
     return null;
   }
 }
