@@ -17,7 +17,7 @@ export const RULES = [
     flag: 'urgency', weight: 15,
     patterns: [/\burgent(ly)?\b/i, /\bimmediately\b/i, /\bwithin (24|48|\d+) ?(hours|hrs|minutes|mins)\b/i,
       /\btoday only\b/i, /\bact now\b/i, /\blast (chance|warning|reminder)\b/i, /\bexpire[sd]?\b/i,
-      /\bsuspend(ed)?\b/i, /\bfinal notice\b/i, /立即|马上|紧急|即将过期/, /\bsegera\b/i],
+      /\bsuspend(ed)?\b/i, /\bfinal notice\b/i, /\bby (today|tonight|tomorrow|end of (the )?day)\b/i, /\bright now\b/i, /立即|马上|紧急|即将过期/, /\bsegera\b/i],
   },
   {
     flag: 'otp_request', weight: 35,
@@ -27,7 +27,7 @@ export const RULES = [
   {
     flag: 'money_transfer', weight: 30,
     patterns: [/\btransfer\b.{0,30}\b(money|funds|\$|sgd|amount|account)/i, /\bpaynow\b/i, /\bsafe(ty)? account\b/i,
-      /\bpay (a )?(small )?(fee|deposit|admin fee)\b/i, /\bupfront\b/i, /\bwire\b/i, /转账|汇款/, /\bpindah(kan)? wang\b/i],
+      /\bpay (a )?(small )?(fee|deposit|admin fee)\b/i, /\bupfront\b/i, /\bwire\b/i, /\b(want|need|give|send|pay|bring|prepare)\b.{0,20}(\$ ?\d|\d[\d,]* ?(dollars|sgd|k)\b)/i, /转账|汇款/, /\bpindah(kan)? wang\b/i],
   },
   {
     flag: 'gift_crypto', weight: 30,
@@ -69,7 +69,7 @@ export const RULES = [
   {
     flag: 'threat', weight: 25,
     patterns: [/\barrest(ed)?\b/i, /\blegal action\b/i, /\bjail\b/i, /\bmoney laundering\b/i, /\bwill be (charged|blocked|terminated)\b/i,
-      /\bfine of\b/i, /洗钱|逮捕/],
+      /\bfine of\b/i, /\bor (else|not)\b.{0,20}\b(i('m| am| will)|we('re| are| will)|you('ll| will))\b/i, /\bor else\b/i, /洗钱|逮捕/],
   },
   {
     flag: 'personal_info', weight: 20,
