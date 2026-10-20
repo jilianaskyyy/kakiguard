@@ -9,7 +9,7 @@
 
 Most scam apps help *you* check *after* the fact. KakiGuard protects people **in the moment** and **together**:
 
-| Features |
+| Features | Description |
 |---|---|
 | **Live Call Guard** | Put a call on speaker. The app listens, highlights scam phrases as they're spoken, and when risk hits "high" the whole screen turns red: **Hang up now**. Your family's phones light up *during* the call. |
 | **Ask my Kaki** | One tap sends a suspicious message to your family. Their phones pop up a big *Scam! / Looks okay / I'm calling you* sheet. Answers stream back live. A human second opinion in seconds. |
