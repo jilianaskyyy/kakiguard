@@ -122,6 +122,7 @@ export default function CallGuard() {
   const [countdown, setCountdown] = useState(null);
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [noticeOpen, setNoticeOpen] = useState(false);
+  const sharedRef = useRef(false);
   const modeRef = useRef(null);
   modeRef.current = mode;
   useEffect(() => { api.get('/notify-settings').then((d) => setCallMode(d.settings.call_alert)).catch(() => {}); }, []);
