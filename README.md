@@ -1,4 +1,4 @@
-# KakiGuard 🛡️
+# KakiGuard 
 **Don't face a scam alone.** A community-powered scam protection app for Singapore — NCS Hackathon 2026, Problem Statement 2.
 
 > Why not "ScamShield"? That's already the name of the official government app (scamshield.gov.sg). Using it would confuse judges and users, so this project is called **KakiGuard** — *kaki* = buddy in Singlish.
@@ -9,20 +9,20 @@
 
 Most scam apps help *you* check *after* the fact. KakiGuard protects people **in the moment** and **together**:
 
-| Feature | What judges see |
+| Features |
 |---|---|
 | **Live Call Guard** | Put a call on speaker. The app listens, highlights scam phrases as they're spoken, and when risk hits "high" the whole screen turns red: **Hang up now**. Your family's phones light up *during* the call. |
 | **Ask my Kaki** | One tap sends a suspicious message to your family. Their phones pop up a big *Scam! / Looks okay / I'm calling you* sheet. Answers stream back live. A human second opinion in seconds. |
-| **Highlighter explanation** | Instead of "this is a scam", the exact risky words are marked like a highlighter pen. Tap any mark to learn *why*. Teaches people, doesn't just judge. |
+| **Highlighter explanation** | Instead of "this is a scam", the exact risky words are marked with a highlighter. Tap any mark to learn *why*. Teaches people, doesn't just judge. |
 | **Community memory** | "8 people reported something like this" — your message is matched against verified reports from neighbours. |
 | **Moderated alerts** | AI pre-screens reports; a human moderator verifies; then every connected phone gets an alert instantly. No AI accusations published automatically. |
 | **Scam or Safe?** | Swipeable game for kids and teens, explained in the user's language. |
 | **Is it really you?** | Beats AI voice clones: when a caller claims to be family, KakiGuard asks that person's *own phone* "Are you calling Mum right now?". Plus a family code word that is never stored. |
 | **Family block list** | Block a number once and your whole Safety Circle is warned whenever it shows up. |
-| **Simple / Full mode** | Chosen at sign-up. Simple = three giant buttons and the family, for seniors. Full = everything. |
-| **Privacy built in (PDPA)** | Checked messages are never stored, NRIC/card/OTP numbers are removed before saving, old data auto-deletes, and users can download or delete their data. See `JUDGES_QA.md`. |
+| **Simple / Full mode** | Chosen at sign-up and can be changed anytime. Simple = three giant buttons and the family, for seniors. Full = everything. |
+| **Privacy built in (PDPA)** | Checked messages are never stored, NRIC/card/OTP numbers are removed before saving, old data auto-deletes, and users can download or delete their data. |
 | **Quiet by default** | Notifications screen with a weekly family summary instead of constant pings. Asks go to your *main kaki* first and only reach the rest of the family if nobody answers in 2 minutes. Quiet hours, mute, and "urgent only" mode. SOS and risky live calls always come through. |
-| **For all ages** | 4 languages (English, 中文, Melayu, தமிழ்), a one-tap **AA** bigger-text mode, very large buttons, Atkinson Hyperlegible font (designed for low vision), installable on phones, and Android "Share → KakiGuard" to check an SMS straight from your messages app. |
+| **For all ages** | 4 languages (English, 中文, Melayu, தமிழ்), a one-tap **AA** bigger-text mode, very large buttons.|
 
 ---
 
@@ -36,8 +36,7 @@ Most scam apps help *you* check *after* the fact. KakiGuard protects people **in
 | API | **Node.js + Express** | Simple REST API |
 | Database | **SQLite** (better-sqlite3) | A single file, no database server to install |
 | Login | JWT + bcrypt | Secure passwords, stays logged in |
-| Scam detection | Own rule engine (`shared/scamEngine.js`) | Works offline, explainable, shared by phone and server |
-| AI (optional) | Claude API | Plain-language explanation in the user's language |
+| AI | Ollama | Plain-language explanation in the user's language |
 | Install on phone | PWA (manifest + service worker) | "Add to Home Screen", no app store needed |
 
 ---
@@ -149,22 +148,6 @@ kakiguard/
 
 ## 6. How the pieces work
 
-### Scam engine (`shared/scamEngine.js`)
-- `RULES` — each red flag (e.g. `otp_request`) has a weight and regex patterns in English, Chinese and Malay.
-- Links are checked against `OFFICIAL_DOMAINS`. A link that *mentions* a brand (`dbs-sg-secure.com`) but isn't official = **fake-looking link**. Short links and risky endings (`.xyz`, `.top`, `.vip`) also count.
-- Score = sum of weights + bonuses for dangerous combinations (e.g. *government* + *transfer money*), capped at 100. 60+ = high, 30+ = medium.
-- It returns **spans** (start/end positions) — that's how the app highlights exact words.
-- The same file is imported by the server *and* the phone (for live call analysis with zero delay).
-
-**Add a new scam pattern:** add an object to `RULES`, then add `flag.<key>.t` and `flag.<key>.d` to each language file.
-
-### AI explanation (optional)
-Put your key in `server/.env`:
-```
-ANTHROPIC_API_KEY=sk-ant-...
-```
-Restart. The checker now also shows a short explanation written in the user's language. Without a key everything still works — great for demo day when Wi-Fi is bad.
-
 ### Real-time (Socket.io)
 When a phone connects it joins rooms: `user:<id>`, `circle:<id>` for each family circle, and `mods` for moderators.
 | Event | Sent when | Who receives |
@@ -193,12 +176,6 @@ Asks go to your **main kaki** first. If nobody replies within `ESCALATE_SECONDS`
 
 Start fresh any time: `npm run reset-db`.
 
-### Add a language
-Copy `client/src/i18n/en.js` to e.g. `hi.js`, translate the values, then add it to `LANGS` and `SPEECH_LANG` in `i18n/index.jsx`. Missing keys fall back to English automatically.
-
-## Answers for judges
-See **`JUDGES_QA.md`**: PDPA, data care, cost/speed/safety, scalability, voice cloning, call blocking, the Safety Circle pitch, and the two modes.
-
 ## 7. API reference
 
 All routes except login/register need the header `Authorization: Bearer <token>`.
@@ -226,35 +203,6 @@ All routes except login/register need the header `Authorization: Bearer <token>`
 | GET / PATCH | /api/notify-settings | `{ receive, quiet_on, quiet_start, quiet_end, ask_mode, main_kaki_id, call_alert, muted, weekly_summary }` |
 | POST | /api/mod/reports/:id | `{ action: 'verify' \| 'reject' }` |
 
-## 8. Splitting the work in a team
-
-| Person | Owns | Files |
-|---|---|---|
-| 1 | Scam engine + AI | `shared/scamEngine.js`, `server/ai.js`, `routes/check.js` |
-| 2 | Backend + database | `server/*` |
-| 3 | Check + Call Guard screens | `pages/Check.jsx`, `pages/CallGuard.jsx`, `components/ui.jsx` |
-| 4 | Family, Community, Learn, Moderator | the other pages + translations |
-
-## 9. Deploying (optional)
-Any Node host works (Render, Railway, a VPS):
-- Build command: `npm run setup && npm run build`
-- Start command: `npm start`
-- Env vars: `JWT_SECRET`, optionally `ANTHROPIC_API_KEY`
-SQLite stores data in a file, so pick a host with a persistent disk (or accept that the demo data resets on redeploy — fine for a hackathon).
-
-## 10. Troubleshooting
-
-| Problem | Fix |
-|---|---|
-| `[vite] http proxy error … ECONNREFUSED` | The API server isn't running. Scroll up in the terminal to the green **[api]** lines to see why it crashed. Usually it's one of the next three rows. |
-| `[api]` says `Cannot find package 'express'` (or similar) | Server packages aren't installed. Run `npm run setup` from the project root. |
-| `[api]` mentions `better-sqlite3` or `bindings` | Run `npm install --prefix server` again. Use Node 20–26. On Windows, if it still fails, install "Desktop development with C++" from Visual Studio Build Tools. |
-| `[api]` says `EADDRINUSE :3001` | Something else is using port 3001 (often an old KakiGuard terminal). Close other terminals, or change `PORT` in `server/.env` and the two `3001`s in `client/vite.config.js`. |
-| `Cannot find module @rollup/rollup-…` | Delete `client/node_modules` and `client/package-lock.json`, run `npm install --prefix client` again. |
-| Phone can't open the Network URL | Same Wi-Fi? Allow Node through Windows Firewall. School Wi-Fi often blocks device-to-device — use your phone hotspot or the cloudflared tunnel. |
-| Microphone does nothing | Needs https or localhost, and Chrome. Use `npm run dev:https` or the demo call. |
-| Port already in use | Close other terminals, or change `PORT` in `server/.env` (and the proxy in `client/vite.config.js`). |
-| Want clean demo data | `npm run reset-db`, then restart. |
 
 ## Important
-KakiGuard spots warning signs; it cannot be 100% sure. The app always points people to official help: the **24/7 ScamShield Helpline 1799**, their bank, and the police (999 in an emergency). Translations other than English should be checked by native speakers before judging.
+KakiGuard spots warning signs; it cannot be 100% sure. The app always points people to official help: the **24/7 ScamShield Helpline 1799**, their bank, and the police (999 in an emergency). 
