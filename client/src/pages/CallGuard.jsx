@@ -59,7 +59,6 @@ function ListenNotice({ onAgree, onCancel }) {
 }
 
 export default function CallGuard() {
-  const [aiResult, setAiResult] = useState(null);
   const { t, lang } = useI18n();
   const { socket } = useApp();
   const nav = useNavigate();
@@ -76,11 +75,46 @@ export default function CallGuard() {
   const full = [...lines, interim].join(' ');
   const result = analyse(full);
   
-  // Combine rule engine results with AI results
-  const effectiveScore = aiResult?.score ?? result.score;
-  const effectiveSummary = aiResult?.summary;
-  const level = levelOf(effectiveScore); 
+    // AI judgement of the caller's intent { score, tactics, reason }, from /api/call/assess
+  const [aiRisk, setAiRisk] = useState(null);
+  // The AI is trusted step by step: a few words can't make it shout "scam"
+  const saidWords = lines.join(' ').split(/\s+/).filter(Boolean).length;
+  const aiTrust = Math.min(1, saidWords / ((aiRisk?.tactics?.length || 0) >= 2 ? 15 : 25));
+  let aiScore = aiRisk ? Math.round(aiRisk.score * aiTrust) : 0;
+  // With no warning words heard, the AI alone needs 2+ clear tactics to reach "Hang up now"
+  if (result.score === 0 && (aiRisk?.tactics?.length || 0) < 2) aiScore = Math.min(aiScore, 55);
+  const target = Math.max(result.score, aiScore);
 
+  // Escalation: the meter CLIMBS toward the risk instead of jumping
+  const [score, setScore] = useState(0);
+  useEffect(() => {
+    if (score === target) return undefined;
+    const id = setTimeout(() => setScore((s) => (target > s ? Math.min(target, s + 4) : Math.max(target, s - 4))), 550);
+    return () => clearTimeout(id);
+  }, [score, target]);
+  const level = levelOf(score);
+
+  // Ask the Call Guard AI at most every 12 s, once at least 12 words were said
+  const linesRef = useRef(lines);
+  linesRef.current = lines;
+  const aiAsked = useRef({ at: 0, words: 0, busy: false });
+  useEffect(() => {
+    if (!mode) return undefined;
+    const tick = () => {
+      const said = linesRef.current.join(' ');
+      const words = said.split(/\s+/).filter(Boolean).length;
+      const a = aiAsked.current;
+      if (a.busy || words < 12 || words - a.words < 6 || Date.now() - a.at < 12000) return;
+      a.busy = true; a.at = Date.now(); a.words = words;
+      api.post('/call/assess', { transcript: said, lang })
+        .then((r) => { if (r.ai && modeRef.current) setAiRisk(r); }) // ignore late answers after the call stopped
+        .catch(() => {})
+        .finally(() => { a.busy = false; });
+    };
+    tick();
+    const id = setInterval(tick, 3000);
+    return () => clearInterval(id);
+  }, [mode, lang]);
 
   // Family alert rules come from Notification settings: auto (5s countdown) | ask | off
   const [callMode, setCallMode] = useState('auto');
@@ -88,30 +122,18 @@ export default function CallGuard() {
   const [countdown, setCountdown] = useState(null);
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [noticeOpen, setNoticeOpen] = useState(false);
-  const sharedRef = useRef(false);
+  const modeRef = useRef(null);
+  modeRef.current = mode;
   useEffect(() => { api.get('/notify-settings').then((d) => setCallMode(d.settings.call_alert)).catch(() => {}); }, []);
 
   const shareWithFamily = () => {
     setCountdown(null);
     if (familyTold) return;
     setFamilyTold(true); setShared(true); sharedRef.current = true;
-    socket?.emit('call:risk', { score: result.score, level, shared: true });
+    socket?.emit('call:risk', { score, level, shared: true });
     api.post('/kaki', { content: lines.slice(-3).join(' '), kind: 'call' }).catch(() => {});
   };
 
-  // Automatically send transcript to Gemini AI backend when new lines arrive
-  useEffect(() => {
-    if (!full.trim()) {
-      setAiResult(null);
-      return;
-    }
-    const timer = setTimeout(() => {
-      api.post('/check', { text: full, lang })
-        .then((data) => setAiResult(data))
-        .catch(() => setAiResult(null));
-    }, 400); // 400ms debounce so it doesn't spam the API on every single character
-    return () => clearTimeout(timer);
-  }, [full, lang]);
 
   // Phone buzzes when the level rises
   useEffect(() => {
@@ -122,8 +144,10 @@ export default function CallGuard() {
   }, [level, mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep family's live banner updated, only once shared
-  useEffect(() => { if (shared && mode) socket?.emit('call:risk', { score: result.score, level, shared: true }); }, [result.score, shared]); // eslint-disable-line react-hooks/exhaustive-deps
-
+  useEffect(() => {
+    if (!shared) return;
+    socket?.emit('call:risk', mode ? { score, level, shared: true } : { score: 0, level: 'low', ended: true, shared: true });
+  }, [score, shared, mode]); // eslint-disable-line react-hooks/exhaustive-deps
   // 5-second countdown, cancellable
   useEffect(() => {
     if (countdown === null) return undefined;
@@ -141,8 +165,7 @@ export default function CallGuard() {
   };
   useEffect(() => () => stop(), []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const reset = () => { setLines([]); setInterim(''); setDismissed(false); setFamilyTold(false); setShared(false); sharedRef.current = false; setCountdown(null); lastLevel.current = 'low'; setErr(''); };
-
+  const reset = () => { setLines([]); setInterim(''); setDismissed(false); setFamilyTold(false); setShared(false); sharedRef.current = false; setCountdown(null); lastLevel.current = 'low'; setErr(''); setAiRisk(null); setScore(0); aiAsked.current = { at: 0, words: 0, busy: false }; }; 
   // Show the notice first, unless the person ticked "don't show again" on this device
   const askToListen = () => {
     let ok = false;
@@ -169,9 +192,19 @@ export default function CallGuard() {
       }
       setInterim(live);
     };
-    rec.onerror = (e) => { if (e.error === 'not-allowed') setErr(t('call.micBlocked')); };
-    rec.onend = () => { if (recRef.current === rec) rec.start(); }; // keep listening until Stop
-    rec.start(); recRef.current = rec; setMode('mic');
+    rec.onerror = (e) => {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        recRef.current = null; setMode(null); setErr(t('call.micBlocked'));
+      }
+    };
+    // Chrome ends recognition by itself after a pause. Restart it until the person taps Stop.
+    rec.onend = () => {
+      if (recRef.current !== rec) return;
+      setTimeout(() => {
+        if (recRef.current !== rec) return;
+        try { rec.start(); } catch { /* already running */ }
+      }, 300);
+    };    rec.start(); recRef.current = rec; setMode('mic');
   };
 
   const startDemo = () => {
@@ -198,25 +231,23 @@ export default function CallGuard() {
     <main className="page callguard">
       <PageHead title={t('call.title')} sub={t('call.intro')} back />
 
-      {/* <div className={`call-meter cm-${level} ${mode ? 'live' : ''}`}>
-        <div className="cm-ring"><span>{result.score}</span></div>
-        <strong>{mode || lines.length ? t(statusKey) : t('call.title')}</strong>
-        <div className="cm-bar"><i style={{ width: `${result.score}%` }} /></div>
-        {result.flags.length > 0 && (
-          <div className="chips">{result.flags.slice(0, 5).map((f) => <span key={f.flag} className="chip warn">{t(`flag.${f.flag}.t`)}</span>)}</div>
-        )}
-      </div> */}
 
       <div className={`call-meter cm-${level} ${mode ? 'live' : ''}`}>
         {mode === 'mic' && <span className="listening-badge" role="status"><i aria-hidden="true" /> {t('listen.badge')}</span>}
-        <div className="cm-ring"><span>{effectiveScore}</span></div>
-        <strong>{mode || lines.length ? (effectiveSummary || t(statusKey)) : t('call.title')}</strong>
-        <div className="cm-bar"><i style={{ width: `${effectiveScore}%` }} /></div>
-        {result.flags.length > 0 && (
+        <div className="cm-ring"><span>{score}</span></div>
+        <strong>{mode || lines.length ? t(statusKey) : t('call.title')}</strong>
+        <div className="cm-bar"><i style={{ width: `${score}%` }} /></div>        {result.flags.length > 0 && (
           <div className="chips">
             {result.flags.slice(0, 5).map((f) => (
               <span key={f.flag} className="chip warn">{t(`flag.${f.flag}.t`)}</span>
             ))}
+          </div>
+        )}
+                {aiRisk && (
+          <div className="ai-call">
+            <span className="ai-call-head"><Sparkles size={16} /> {t('call.aiLabel', { n: aiRisk.score })}</span>
+            {aiRisk.reason && <p>{aiRisk.reason}</p>}
+            {aiRisk.tactics?.length > 0 && <div className="chips center">{aiRisk.tactics.map((x) => <span key={x} className="chip warn">{x}</span>)}</div>}
           </div>
         )}
       </div>
@@ -249,8 +280,11 @@ export default function CallGuard() {
           <PhoneOff size={72} strokeWidth={2.4} />
           <h2>{t('call.danger')}</h2>
           <p>{t('call.dangerSub')}</p>
-          <div className="chips center">{result.flags.slice(0, 4).map((f) => <span key={f.flag} className="chip">{t(`flag.${f.flag}.t`)}</span>)}</div>
-          {familyTold && <p className="told"><Users size={18} /> {t('call.familyTold')}</p>}
+          {aiRisk?.reason && <p className="hangup-ai"><Sparkles size={16} /> {aiRisk.reason}</p>}
+          <div className="chips center">
+            {result.flags.slice(0, 4).map((f) => <span key={f.flag} className="chip">{t(`flag.${f.flag}.t`)}</span>)}
+            {result.flags.length === 0 && aiRisk?.tactics?.slice(0, 3).map((x) => <span key={x} className="chip">{x}</span>)}
+          </div>          {familyTold && <p className="told"><Users size={18} /> {t('call.familyTold')}</p>}
           {!familyTold && countdown !== null && (
             <div className="countdown">
               <p className="told"><Users size={18} /> {t('call.countdown', { n: countdown })}</p>
