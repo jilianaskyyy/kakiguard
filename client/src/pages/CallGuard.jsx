@@ -4,7 +4,7 @@
 //   2. "Play a demo scam call" — a scripted scammer voice, perfect for the hackathon stage
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mic, Square, Play, PhoneOff, Users, ShieldQuestion } from 'lucide-react';
+import { Mic, Square, Play, PhoneOff, Users, ShieldQuestion, Sparkles, X } from 'lucide-react';
 import { analyse } from '@shared/scamEngine.js';
 import { api } from '../api.js';
 import { useApp } from '../AppContext.jsx';
@@ -32,6 +32,30 @@ function MarkedLine({ text }) {
   });
   out.push(text.slice(i));
   return <p>{out}</p>;
+}
+
+// PDPA notice: shown before the microphone turns on (notification + consent)
+const CONSENT_KEY = 'kg_call_notice_ok';
+function ListenNotice({ onAgree, onCancel }) {
+  const { t } = useI18n();
+  const [dontShow, setDontShow] = useState(false);
+  return (
+    <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="listen-title">
+      <div className="sheet">
+        <button type="button" className="sheet-x" onClick={onCancel} aria-label={t('common.close')}><X /></button>
+        <h2 id="listen-title" className="sheet-title"><Mic size={22} /> {t('listen.title')}</h2>
+        <ul className="listen-points">
+          {['p1', 'p2', 'p3', 'p4', 'p5'].map((k) => <li key={k}>{t(`listen.${k}`)}</li>)}
+        </ul>
+        <label className="consent">
+          <input id="listen-dont-show" type="checkbox" checked={dontShow} onChange={(e) => setDontShow(e.target.checked)} />
+          <span>{t('listen.dontShow')}</span>
+        </label>
+        <button type="button" className="btn btn-primary btn-xl" onClick={() => onAgree(dontShow)}>{t('listen.agree')}</button>
+        <button type="button" className="btn btn-ghost" onClick={onCancel}>{t('listen.cancel')}</button>
+      </div>
+    </div>
+  );
 }
 
 export default function CallGuard() {
@@ -63,6 +87,7 @@ export default function CallGuard() {
   const [shared, setShared] = useState(false);
   const [countdown, setCountdown] = useState(null);
   const [verifyOpen, setVerifyOpen] = useState(false);
+  const [noticeOpen, setNoticeOpen] = useState(false);
   const sharedRef = useRef(false);
   useEffect(() => { api.get('/notify-settings').then((d) => setCallMode(d.settings.call_alert)).catch(() => {}); }, []);
 
@@ -118,6 +143,18 @@ export default function CallGuard() {
 
   const reset = () => { setLines([]); setInterim(''); setDismissed(false); setFamilyTold(false); setShared(false); sharedRef.current = false; setCountdown(null); lastLevel.current = 'low'; setErr(''); };
 
+  // Show the notice first, unless the person ticked "don't show again" on this device
+  const askToListen = () => {
+    let ok = false;
+    try { ok = localStorage.getItem(CONSENT_KEY) === '1'; } catch { /* storage blocked */ }
+    if (ok) startMic(); else setNoticeOpen(true);
+  };
+  const agreeToListen = (dontShow) => {
+    if (dontShow) { try { localStorage.setItem(CONSENT_KEY, '1'); } catch { /* storage blocked */ } }
+    setNoticeOpen(false);
+    startMic();
+  };
+
   const startMic = () => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { setErr(t('call.micBlocked')); return; }
@@ -171,6 +208,7 @@ export default function CallGuard() {
       </div> */}
 
       <div className={`call-meter cm-${level} ${mode ? 'live' : ''}`}>
+        {mode === 'mic' && <span className="listening-badge" role="status"><i aria-hidden="true" /> {t('listen.badge')}</span>}
         <div className="cm-ring"><span>{effectiveScore}</span></div>
         <strong>{mode || lines.length ? (effectiveSummary || t(statusKey)) : t('call.title')}</strong>
         <div className="cm-bar"><i style={{ width: `${effectiveScore}%` }} /></div>
@@ -189,7 +227,7 @@ export default function CallGuard() {
           <button type="button" className="btn btn-dark btn-xl" onClick={stop}><Square /> {t('call.stop')}</button>
         ) : (
           <>
-            <button type="button" className="btn btn-primary btn-xl" onClick={startMic}><Mic /> {t('call.start')}</button>
+            <button type="button" className="btn btn-primary btn-xl" onClick={askToListen}><Mic /> {t('call.start')}</button>
             <button type="button" className="btn btn-ghost" onClick={startDemo}><Play size={18} /> {t('call.demo')}</button>
           </>
         )}
@@ -227,6 +265,7 @@ export default function CallGuard() {
           <button type="button" className="btn btn-outline-white" onClick={() => { stop(); nav('/sos'); }}>{t('home.sosBtn')}</button>
         </div>
       )}
+      {noticeOpen && <ListenNotice onAgree={agreeToListen} onCancel={() => setNoticeOpen(false)} />}
       <VerifySheet open={verifyOpen} onClose={() => setVerifyOpen(false)} />
     </main>
   );
