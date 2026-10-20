@@ -2,6 +2,7 @@
 // Merged into the main language files by i18n/index.jsx. Missing keys fall back to English.
 export default {
   en: {
+    listen: { title: "Before KakiGuard listens", p1: "KakiGuard will listen through your microphone to spot scam warning signs during this call.", p2: "Your call is not recorded. Speech is turned into text on your phone and the audio is never saved.", p3: "Parts of the text may be checked by KakiGuard's AI, with NRIC, card and OTP numbers removed first. Nothing is stored.", p4: "Your family only sees this call if the risk is high, and you can cancel before they are told.", p5: "You can stop listening at any time.", dontShow: "Don't show this again on this phone", agree: "I understand, start listening", cancel: "Not now", badge: "Listening, not recorded" },
     nav: { circle: 'Circle' },
     home: { family: 'Your Safety Circle' },
     circle: { title: 'Safety Circle', sub: 'The people who look out for you, and you for them.', lastAsk: 'Last ask: {name}, {when}', allQuiet: 'All quiet. No family asks this week.' },
@@ -40,6 +41,7 @@ export default {
     },
   },
   zh: {
+    listen: { title: "KakiGuard 开始聆听之前", p1: "KakiGuard 会通过麦克风聆听这通电话，找出诈骗警讯。", p2: "通话不会被录音。语音只会在你的手机上转成文字，录音不会被保存。", p3: "部分文字可能会交给 KakiGuard 的 AI 检查，身份证、卡号和 OTP 会先被删除。不会保存任何内容。", p4: "只有在风险很高时，家人才会看到这通电话，而且你可以在通知前取消。", p5: "你可以随时停止聆听。", dontShow: "在这部手机上不再显示", agree: "我明白了，开始聆听", cancel: "暂时不要", badge: "正在聆听，没有录音" },
     nav: { circle: '安全圈' },
     home: { family: '你的安全圈' },
     circle: { title: '安全圈', sub: '照顾你的人，你也照顾他们。', lastAsk: '最近询问：{name}，{when}', allQuiet: '一切平静，本周没有家人询问。' },
@@ -70,6 +72,7 @@ export default {
     privacy: { title: '隐私', notice: '隐私声明', download: '下载我的资料', delete: '删除我的账号', deleteWarn: '这会删除你的账号、举报、留言和家人询问，无法恢复。', typeDelete: '输入 DELETE 确认', deleteBtn: '全部删除', deleted: '你的账号已删除。' },
   },
   ms: {
+    listen: { title: "Sebelum KakiGuard mendengar", p1: "KakiGuard akan mendengar melalui mikrofon anda untuk mengesan tanda penipuan semasa panggilan ini.", p2: "Panggilan anda tidak dirakam. Pertuturan ditukar kepada teks di telefon anda dan audio tidak disimpan.", p3: "Sebahagian teks mungkin disemak oleh AI KakiGuard, dengan NRIC, nombor kad dan OTP dibuang dahulu. Tiada apa disimpan.", p4: "Keluarga anda hanya melihat panggilan ini jika risikonya tinggi, dan anda boleh membatalkan sebelum mereka dimaklumkan.", p5: "Anda boleh berhenti mendengar bila-bila masa.", dontShow: "Jangan tunjuk lagi di telefon ini", agree: "Saya faham, mula mendengar", cancel: "Bukan sekarang", badge: "Mendengar, tidak dirakam" },
     nav: { circle: 'Bulatan' },
     home: { family: 'Bulatan Keselamatan anda' },
     circle: { title: 'Bulatan Keselamatan', sub: 'Orang yang menjaga anda, dan anda menjaga mereka.', lastAsk: 'Pertanyaan terakhir: {name}, {when}', allQuiet: 'Semua tenang. Tiada pertanyaan minggu ini.' },
@@ -100,6 +103,7 @@ export default {
     privacy: { title: 'Privasi', notice: 'Notis privasi', download: 'Muat turun data saya', delete: 'Padam akaun saya', deleteWarn: 'Ini memadam akaun, laporan, komen dan pertanyaan keluarga anda. Tidak boleh dibatalkan.', typeDelete: 'Taip DELETE untuk sahkan', deleteBtn: 'Padam semua', deleted: 'Akaun anda telah dipadam.' },
   },
   ta: {
+    listen: { title: "KakiGuard கேட்கத் தொடங்கும் முன்", p1: "இந்த அழைப்பில் மோசடி அறிகுறிகளைக் கண்டறிய KakiGuard உங்கள் மைக் மூலம் கேட்கும்.", p2: "உங்கள் அழைப்பு பதிவு செய்யப்படாது. பேச்சு உங்கள் தொலைபேசியிலேயே எழுத்தாக மாற்றப்படும்; ஒலி சேமிக்கப்படாது.", p3: "எழுத்தின் சில பகுதிகளை KakiGuard AI சரிபார்க்கலாம்; NRIC, அட்டை எண், OTP முதலில் நீக்கப்படும். எதுவும் சேமிக்கப்படாது.", p4: "அபாயம் அதிகமாக இருந்தால் மட்டுமே குடும்பத்தினருக்குத் தெரியும்; அதற்கு முன் நீங்கள் ரத்து செய்யலாம்.", p5: "எப்போது வேண்டுமானாலும் கேட்பதை நிறுத்தலாம்.", dontShow: "இந்தத் தொலைபேசியில் மீண்டும் காட்ட வேண்டாம்", agree: "புரிந்தது, கேட்கத் தொடங்கு", cancel: "இப்போது வேண்டாம்", badge: "கேட்கிறது, பதிவு இல்லை" },
     nav: { circle: 'வட்டம்' },
     home: { family: 'உங்கள் பாதுகாப்பு வட்டம்' },
     circle: { title: 'பாதுகாப்பு வட்டம்', sub: 'உங்களைக் கவனிப்பவர்கள், நீங்களும் அவர்களை.', lastAsk: 'கடைசி கேள்வி: {name}, {when}', allQuiet: 'எல்லாம் அமைதி. இந்த வாரம் கேள்விகள் இல்லை.' },

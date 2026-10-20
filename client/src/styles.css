@@ -570,3 +570,10 @@ legend { font-weight: 700; margin-bottom: .45rem; }
 .link-row.danger { color: var(--danger-text); }
 .danger-panel { box-shadow: inset 0 0 0 2px var(--danger); }
 .privacy ul { padding-left: 1.2rem; display: flex; flex-direction: column; gap: .35rem; }
+
+.sheet-title { display: flex; align-items: center; gap: .5rem; }
+.listen-points { padding-left: 1.2rem; display: flex; flex-direction: column; gap: .5rem; font-size: .98rem; }
+.listen-points li::marker { color: var(--accent); }
+.listening-badge { display: inline-flex; align-items: center; gap: .4rem; background: var(--danger-soft); color: var(--danger-text); border-radius: 999px; padding: .3rem .8rem; font-weight: 700; font-size: .85rem; }
+.listening-badge i { width: 9px; height: 9px; border-radius: 50%; background: var(--danger); animation: blink 1.2s ease-in-out infinite; }
+@keyframes blink { 50% { opacity: .25; } }
