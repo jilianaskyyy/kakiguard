@@ -505,7 +505,7 @@ legend { font-weight: 700; margin-bottom: .45rem; }
 .simple-family { background: var(--surface); box-shadow: var(--shadow); border-radius: var(--r-lg); padding: 1rem; display: flex; flex-direction: column; gap: .8rem; }
 .simple-family-row { display: flex; gap: 1.1rem; flex-wrap: wrap; }
 /* Fewer details in Simple mode */
-.simple .panel-ai, .simple .flag-list, .simple .composer-tools .tool:nth-child(3), .simple .disclaimer,
+.simple .flag-list, .simple .composer-tools .tool:nth-child(3), .simple .disclaimer,
 .simple .call-controls .btn-ghost:not(.verify-cta) { display: none; }
 
 /* ---------- Sign-up: mode picker + consent ---------- */
@@ -577,3 +577,9 @@ legend { font-weight: 700; margin-bottom: .45rem; }
 .listening-badge { display: inline-flex; align-items: center; gap: .4rem; background: var(--danger-soft); color: var(--danger-text); border-radius: 999px; padding: .3rem .8rem; font-weight: 700; font-size: .85rem; }
 .listening-badge i { width: 9px; height: 9px; border-radius: 50%; background: var(--danger); animation: blink 1.2s ease-in-out infinite; }
 @keyframes blink { 50% { opacity: .25; } }
+
+/* Simple mode: AI explanation box, short and big */
+.simple .panel-ai { font-size: 1.15rem; border: 2px solid var(--accent); }
+.simple .panel-ai ul, .simple .panel-ai .muted { display: none; }
+.simple .panel-ai:has(.muted) { display: none; }
+.simple .ai-call p { font-size: 1.1rem; }
